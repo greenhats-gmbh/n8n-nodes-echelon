@@ -121,7 +121,6 @@ export class Echelon implements INodeType {
 					let stdout = '';
 					let stderr = '';
 
-					// Live-Ausgabe sammeln
 					child.stdout.on('data', (data) => {
 							stdout += data.toString();
 					});
@@ -130,7 +129,6 @@ export class Echelon implements INodeType {
 							stderr += data.toString();
 					});
 
-					// Beendet sich das Programm?
 					child.on('close', (code) => {
 							if (code !== 0) {
 									reject(new Error(`Command failed with code ${code}: ${stderr}`));
@@ -139,7 +137,6 @@ export class Echelon implements INodeType {
 							}
 					});
 
-					// Fehlerbehandlung, falls der Prozess nicht starten kann
 					child.on('error', (error) => {
 							reject(new Error(`Failed to start process: ${error.message}`));
 					});
