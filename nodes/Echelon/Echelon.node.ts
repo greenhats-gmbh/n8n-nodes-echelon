@@ -86,10 +86,6 @@ export class Echelon implements INodeType {
 		],
 	};
 
-	// The function below is responsible for actually doing whatever this node
-	// is supposed to do. In this case, we're just appending the `myString` property
-	// with whatever the user has entered.
-	// You can make async calls and use `await`.
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -116,10 +112,10 @@ export class Echelon implements INodeType {
 			const spawnProcess = (cmd: string, args: string[]) => {
 				return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
 					const child = child_process.spawn(cmd, args, {
-							cwd: process.cwd(),  // Setzt das aktuelle Arbeitsverzeichnis
-							env: process.env,    // Vererbt System-Umgebungsvariablen
-							shell: true,         // Startet in einer Shell-Umgebung
-							stdio: ['ignore', 'pipe', 'pipe'], // stdout & stderr capturen
+							cwd: process.cwd(),
+							env: process.env,
+							shell: true,
+							stdio: ['ignore', 'pipe', 'pipe'],
 					});
 
 					let stdout = '';
