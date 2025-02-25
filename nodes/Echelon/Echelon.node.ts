@@ -5,7 +5,7 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
-import { spawn } from 'child_process';
+import * as child_process from 'child_process';
 
 export class Echelon implements INodeType {
 	description: INodeTypeDescription = {
@@ -115,7 +115,7 @@ export class Echelon implements INodeType {
 
 			const spawnProcess = (cmd: string, args: string[]) => {
 				return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-					const child = spawn(cmd, args, {
+					const child = child_process.spawn(cmd, args, {
 							cwd: process.cwd(),  // Setzt das aktuelle Arbeitsverzeichnis
 							env: process.env,    // Vererbt System-Umgebungsvariablen
 							shell: true,         // Startet in einer Shell-Umgebung
@@ -184,7 +184,7 @@ export class Echelon implements INodeType {
 				const fs = require('fs');
 				const data = fs.readFileSync(output_file, 'utf8');
 
-				let output_file_jsonl_data = [];
+				let output_file_jsonl_data: any[] = [];
 				data.split('\n').forEach((line: string) => {
 					try {
 						output_file_jsonl_data.push(JSON.parse(line));
