@@ -5,7 +5,7 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 
 export class Echelon implements INodeType {
 	description: INodeTypeDescription = {
@@ -36,11 +36,18 @@ export class Echelon implements INodeType {
 				default: '',
 			},
 			{
-				displayName: 'Parse JSON Output File',
+				displayName: 'Parse Output File as JSON',
 				name: 'parseJson',
 				type: 'boolean',
 				default: false,
 				description: 'If the output is a JSON file, it will be parsed and the data will be available for further processing.',
+			},
+			{
+				displayName: 'Parse Output File as JSONL',
+				name: 'parseJsonL',
+				type: 'boolean',
+				default: false,
+				description: 'If the output is a JSON-Line file, it will be parsed and the data will be available for further processing.',
 			},
 			{
 				displayName: 'Arguments',
@@ -91,48 +98,66 @@ export class Echelon implements INodeType {
 			const program = this.getNodeParameter('program', itemIndex, '') as string;
 			const argumentValues = this.getNodeParameter('arguments', itemIndex, {}) as any;
 			const parseJson = this.getNodeParameter('parseJson', itemIndex, false) as boolean;
-			const output_file = `output-${Date.now()}-${Math.random().toString(36).substring(7)}.out`;
+			const parseJsonL = this.getNodeParameter('parseJsonL', itemIndex, false) as boolean;
+			const output_file = `${process.cwd()}/output-${Date.now()}-${Math.random().toString(36).substring(7)}.out`;
 
-			let program_arguments = '';
+			let args: string[] = [];
 
 			if (Array.isArray(argumentValues.argumentValues)) {
 				for (const argument of argumentValues.argumentValues) {
-					if (argument.parameter == '' || argument.parameter == null) {
-						continue;
-					}
-					if (argument.value == '' || argument.value == null) {
-						program_arguments += ` ${argument.parameter}`;
-					} else {
-						program_arguments += ` ${argument.parameter} '${argument.value}'`;
-					}
+					if (argument.parameter) args.push(argument.parameter);
+					if (argument.value) args.push(argument.value);
 				}
 			}
+			args = args.map(arg => arg.includes('FILENAME') ? output_file : arg);
 
-			if (program_arguments.includes('FILENAME')) {
-				program_arguments = program_arguments.replace('FILENAME', output_file);
-			}
+			const command = `${program} ${args.join(' ')}`;
 
-			const command = `${program}${program_arguments}`;
-
-			const execAsync = (cmd: string) => {
+			const spawnProcess = (cmd: string, args: string[]) => {
 				return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-					exec(cmd, (error, stdout, stderr) => {
-						if (error) {
-							reject(error);
-						} else {
-							resolve({ stdout, stderr });
-						}
+					const child = spawn(cmd, args, {
+							cwd: process.cwd(),  // Setzt das aktuelle Arbeitsverzeichnis
+							env: process.env,    // Vererbt System-Umgebungsvariablen
+							shell: true,         // Startet in einer Shell-Umgebung
+							stdio: ['ignore', 'pipe', 'pipe'], // stdout & stderr capturen
+					});
+
+					let stdout = '';
+					let stderr = '';
+
+					// Live-Ausgabe sammeln
+					child.stdout.on('data', (data) => {
+							stdout += data.toString();
+					});
+
+					child.stderr.on('data', (data) => {
+							stderr += data.toString();
+					});
+
+					// Beendet sich das Programm?
+					child.on('close', (code) => {
+							if (code !== 0) {
+									reject(new Error(`Command failed with code ${code}: ${stderr}`));
+							} else {
+									resolve({ stdout, stderr });
+							}
+					});
+
+					// Fehlerbehandlung, falls der Prozess nicht starten kann
+					child.on('error', (error) => {
+							reject(new Error(`Failed to start process: ${error.message}`));
 					});
 				});
 			};
 
 			try {
-				const { stdout, stderr } = await execAsync(command);
+				const { stdout, stderr } = await spawnProcess(program, args);
 				returnData.push({
 					json: {
 						command,
 						stdout,
 						stderr,
+						output_file,
 					},
 				});
 			} catch (error) {
@@ -148,18 +173,26 @@ export class Echelon implements INodeType {
 				const fs = require('fs');
 				const data = fs.readFileSync(output_file, 'utf8');
 
-				returnData.push({
-					json: {
-						output_file_json_data: JSON.parse(data),
+				try {
+					returnData[returnData.length - 1].json.output_file_json_data = JSON.parse(data);
+				} catch (error) {
+						returnData[returnData.length - 1].json.error_parsing_json = error.message;
+				}
+			}
+
+			if (parseJsonL === true) {
+				const fs = require('fs');
+				const data = fs.readFileSync(output_file, 'utf8');
+
+				let output_file_jsonl_data = [];
+				data.split('\n').forEach((line: string) => {
+					try {
+						output_file_jsonl_data.push(JSON.parse(line));
+					} catch (error) {
+
 					}
 				});
-			}
-			if (program_arguments.includes('FILENAME')) {
-				returnData.push({
-					json: {
-						output_file: output_file,
-					},
-				});
+				returnData[returnData.length - 1].json.output_file_jsonl_data = output_file_jsonl_data;
 			}
 		}
 
