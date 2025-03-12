@@ -50,6 +50,13 @@ export class Echelon implements INodeType {
 				description: 'If the output is a JSON-Line file, it will be parsed and the data will be available for further processing.',
 			},
 			{
+				displayName: 'Parse Output File as TEXT per line',
+				name: 'parseTextL',
+				type: 'boolean',
+				default: false,
+				description: 'If the output is a TEXT file, it will be parsed and the data will be available for further processing.',
+			},
+			{
 				displayName: 'Arguments',
 				name: 'arguments',
 				type: 'fixedCollection',
@@ -95,6 +102,7 @@ export class Echelon implements INodeType {
 			const argumentValues = this.getNodeParameter('arguments', itemIndex, {}) as any;
 			const parseJson = this.getNodeParameter('parseJson', itemIndex, false) as boolean;
 			const parseJsonL = this.getNodeParameter('parseJsonL', itemIndex, false) as boolean;
+			const parseTextL = this.getNodeParameter('parseTextL', itemIndex, false) as boolean;
 			const output_file = `${process.cwd()}/output-${Date.now()}-${Math.random().toString(36).substring(7)}.out`;
 
 			let args: string[] = [];
@@ -186,6 +194,13 @@ export class Echelon implements INodeType {
 					}
 				});
 				returnData[returnData.length - 1].json.output_file_jsonl_data = output_file_jsonl_data;
+			}
+
+			if (parseTextL === true) {
+				const fs = require('fs');
+				const data = fs.readFileSync(output_file, 'utf8');
+
+				returnData[returnData.length - 1].json.output_file_textl_data = data.split('\n');
 			}
 		}
 
