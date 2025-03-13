@@ -162,12 +162,7 @@ export class Echelon implements INodeType {
 					},
 				});
 			} catch (error) {
-				returnData.push({
-					json: {
-						command,
-						error: error.message,
-					},
-				});
+				throw new Error(error.message);
 			}
 
 			if (parseJson === true) {
