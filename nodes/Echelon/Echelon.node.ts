@@ -167,6 +167,11 @@ export class Echelon implements INodeType {
 
 			if (parseJson === true) {
 				const fs = require('fs');
+
+				if (!fs.existsSync(output_file)) {
+					return [];
+				}
+
 				const data = fs.readFileSync(output_file, 'utf8');
 
 				try {
@@ -178,6 +183,11 @@ export class Echelon implements INodeType {
 
 			if (parseJsonL === true) {
 				const fs = require('fs');
+
+				if (!fs.existsSync(output_file)) {
+					return [];
+				}
+
 				const data = fs.readFileSync(output_file, 'utf8');
 
 				let output_file_jsonl_data: any[] = [];
@@ -193,6 +203,11 @@ export class Echelon implements INodeType {
 
 			if (parseTextL === true) {
 				const fs = require('fs');
+
+				if (!fs.existsSync(output_file)) {
+					return [];
+				}
+
 				const data = fs.readFileSync(output_file, 'utf8');
 
 				returnData[returnData.length - 1].json.output_file_textl_data = data.split('\n');
