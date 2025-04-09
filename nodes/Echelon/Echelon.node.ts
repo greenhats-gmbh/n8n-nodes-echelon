@@ -169,7 +169,9 @@ export class Echelon implements INodeType {
 				const fs = require('fs');
 
 				if (!fs.existsSync(output_file)) {
-					return [];
+					// Instead of returning early, handle this case gracefully
+					returnData[returnData.length - 1].json.error_output_file = "Output file not found";
+					continue;
 				}
 
 				const data = fs.readFileSync(output_file, 'utf8');
@@ -177,7 +179,7 @@ export class Echelon implements INodeType {
 				try {
 					returnData[returnData.length - 1].json.output_file_json_data = JSON.parse(data);
 				} catch (error) {
-						returnData[returnData.length - 1].json.error_parsing_json = error.message;
+					returnData[returnData.length - 1].json.error_parsing_json = error.message;
 				}
 			}
 
@@ -185,7 +187,9 @@ export class Echelon implements INodeType {
 				const fs = require('fs');
 
 				if (!fs.existsSync(output_file)) {
-					return [];
+					// Instead of returning early, handle this case gracefully
+					returnData[returnData.length - 1].json.error_output_file = "Output file not found";
+					continue;
 				}
 
 				const data = fs.readFileSync(output_file, 'utf8');
@@ -193,9 +197,11 @@ export class Echelon implements INodeType {
 				let output_file_jsonl_data: any[] = [];
 				data.split('\n').forEach((line: string) => {
 					try {
-						output_file_jsonl_data.push(JSON.parse(line));
+						if (line.trim()) {
+							output_file_jsonl_data.push(JSON.parse(line));
+						}
 					} catch (error) {
-
+						// Silently ignore unparseable lines or add error handling as needed
 					}
 				});
 				returnData[returnData.length - 1].json.output_file_jsonl_data = output_file_jsonl_data;
@@ -205,7 +211,9 @@ export class Echelon implements INodeType {
 				const fs = require('fs');
 
 				if (!fs.existsSync(output_file)) {
-					return [];
+					// Instead of returning early, handle this case gracefully
+					returnData[returnData.length - 1].json.error_output_file = "Output file not found";
+					continue;
 				}
 
 				const data = fs.readFileSync(output_file, 'utf8');
