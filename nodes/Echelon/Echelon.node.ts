@@ -57,6 +57,28 @@ export class Echelon implements INodeType {
 				description: 'If the output is a TEXT file, it will be parsed and the data will be available for further processing.',
 			},
 			{
+				displayName: 'Use STDIN',
+				name: 'useStdin',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to provide input via STDIN to the program',
+			},
+			{
+				displayName: 'STDIN Content',
+				name: 'stdinContent',
+				type: 'string',
+				default: '',
+				description: 'Content to pass as STDIN to the program',
+				displayOptions: {
+					show: {
+						useStdin: [true],
+					},
+				},
+				typeOptions: {
+					rows: 5,
+				},
+			},
+			{
 				displayName: 'Arguments',
 				name: 'arguments',
 				type: 'fixedCollection',
@@ -103,6 +125,8 @@ export class Echelon implements INodeType {
 			const parseJson = this.getNodeParameter('parseJson', itemIndex, false) as boolean;
 			const parseJsonL = this.getNodeParameter('parseJsonL', itemIndex, false) as boolean;
 			const parseTextL = this.getNodeParameter('parseTextL', itemIndex, false) as boolean;
+			const useStdin = this.getNodeParameter('useStdin', itemIndex, false) as boolean;
+			const stdinContent = useStdin ? this.getNodeParameter('stdinContent', itemIndex, '') as string : '';
 			const output_file = `${process.cwd()}/output-${Date.now()}-${Math.random().toString(36).substring(7)}.out`;
 
 			let args: string[] = [];
@@ -117,25 +141,41 @@ export class Echelon implements INodeType {
 
 			const command = `${program} ${args.join(' ')}`;
 
-			const spawnProcess = (cmd: string, args: string[]) => {
+			const spawnProcess = (cmd: string, args: string[], stdin?: string) => {
 				return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
 					const child = child_process.spawn(cmd, args, {
 							cwd: process.cwd(),
 							env: process.env,
 							shell: true,
-							stdio: ['ignore', 'pipe', 'pipe'],
+							// Explicitly set stdio to ensure pipes are created
+							stdio: ['pipe', 'pipe', 'pipe'],
 					});
 
 					let stdout = '';
 					let stderr = '';
 
-					child.stdout.on('data', (data) => {
+					// Ensure stdout exists before attaching listeners
+					if (child.stdout) {
+						child.stdout.on('data', (data) => {
 							stdout += data.toString();
-					});
+						});
+					}
 
-					child.stderr.on('data', (data) => {
+					// Ensure stderr exists before attaching listeners
+					if (child.stderr) {
+						child.stderr.on('data', (data) => {
 							stderr += data.toString();
-					});
+						});
+					}
+
+					// Only pipe stdin when content is provided
+					if (stdin && child.stdin) {
+						child.stdin.write(stdin);
+						child.stdin.end();
+					} else if (child.stdin) {
+						// Close stdin if we're not using it
+						child.stdin.end();
+					}
 
 					child.on('close', (code) => {
 							if (code !== 0) {
@@ -152,13 +192,14 @@ export class Echelon implements INodeType {
 			};
 
 			try {
-				const { stdout, stderr } = await spawnProcess(program, args);
+				const { stdout, stderr } = await spawnProcess(program, args, useStdin ? stdinContent : undefined);
 				returnData.push({
 					json: {
 						command,
 						stdout,
 						stderr,
 						output_file,
+						stdin: useStdin ? stdinContent : undefined,
 					},
 				});
 			} catch (error) {
