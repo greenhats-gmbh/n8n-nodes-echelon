@@ -22,12 +22,11 @@ export class Echelon implements INodeType {
 		outputs: [NodeConnectionType.Main],
 		properties: [
 			{
-				displayName: 'Program to execute',
+				displayName: 'Program To Execute',
 				name: 'program',
 				type: 'string',
 				default: '',
 				placeholder: 'legba',
-				description: 'The program to execute',
 			},
 			{
 				displayName: 'Use the placeholder FILENAME on the value to pass the placeholder for the filename in the command',
@@ -40,21 +39,21 @@ export class Echelon implements INodeType {
 				name: 'parseJson',
 				type: 'boolean',
 				default: false,
-				description: 'If the output is a JSON file, it will be parsed and the data will be available for further processing.',
+				description: 'Whether to parse the output file as JSON and make the data available for further processing',
 			},
 			{
 				displayName: 'Parse Output File as JSONL',
 				name: 'parseJsonL',
 				type: 'boolean',
 				default: false,
-				description: 'If the output is a JSON-Line file, it will be parsed and the data will be available for further processing.',
+				description: 'Whether to parse the output file as JSON-Lines and make the data available for further processing',
 			},
 			{
-				displayName: 'Parse Output File as TEXT per line',
+				displayName: 'Parse Output File As TEXT Per Line',
 				name: 'parseTextL',
 				type: 'boolean',
 				default: false,
-				description: 'If the output is a TEXT file, it will be parsed and the data will be available for further processing.',
+				description: 'Whether to parse the output file as text per line and make the data available for further processing',
 			},
 			{
 				displayName: 'Use STDIN',
@@ -82,7 +81,7 @@ export class Echelon implements INodeType {
 				displayName: 'Arguments',
 				name: 'arguments',
 				type: 'fixedCollection',
-				default: '',
+				default: {},
 				typeOptions: {
 					multipleValues: true,
 				},
